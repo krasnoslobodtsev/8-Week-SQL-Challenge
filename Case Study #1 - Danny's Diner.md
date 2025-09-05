@@ -1,4 +1,4 @@
-Case description and schema: https://8weeksqlchallenge.com/case-study-1/
+[Case description and schema](https://8weeksqlchallenge.com/case-study-1/)
 
 1. What is the total amount each customer spent at the restaurant?
 ```
