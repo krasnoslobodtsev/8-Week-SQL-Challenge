@@ -1,6 +1,7 @@
-Case description and schema: https://8weeksqlchallenge.com/case-study-2/
+[Case description and schema](https://8weeksqlchallenge.com/case-study-2/)
 
-CREATE SCHEMA pizza_runner;
+Schema and data cleaning:
+```CREATE SCHEMA pizza_runner;
 SET search_path = pizza_runner;
 
 DROP TABLE IF EXISTS runners;
@@ -142,28 +143,29 @@ ALTER COLUMN duration TYPE DECIMAL USING duration::DECIMAL;
 ALTER TABLE runner_orders
 ALTER COLUMN distance TYPE DECIMAL USING distance::DECIMAL,
 ALTER COLUMN pickup_time TYPE TIMESTAMP USING pickup_time::TIMESTAMP;
+```
 
--- A. Pizza Metrics
+A. Pizza Metrics
 
--- 1. How many pizzas were ordered?
-
+1. How many pizzas were ordered?
+```
 SELECT COUNT(pizza_id)
 FROM customer_orders;
-
--- 2.How many unique customer orders were made?
-
+```
+2. How many unique customer orders were made?
+```
 SELECT COUNT(DISTINCT  order_id)
 FROM customer_orders;
-
--- 3.How many successful orders were delivered by each runner?
-
+```
+3. How many successful orders were delivered by each runner?
+```
 SELECT runner_id, COUNT(order_id)
 FROM runner_orders
 WHERE cancellation = ''
 GROUP BY runner_id;
-
--- 4.How many of each type of pizza was delivered?
-
+```
+4. How many of each type of pizza was delivered?
+```
 SELECT pizza_name, COUNT(customer_orders.order_id)
 FROM customer_orders
 JOIN pizza_names
@@ -171,10 +173,10 @@ ON customer_orders.pizza_id = pizza_names.pizza_id
 JOIN runner_orders
 ON runner_orders.order_id = customer_orders.order_id
 WHERE cancellation = ''
-GROUP BY pizza_name;
-
--- 5.How many Vegetarian and Meatlovers were ordered by each customer?
-
+GROUP BY pizza_name;```
+```
+5. How many Vegetarian and Meatlovers were ordered by each customer?
+```
 SELECT customer_id, 
   SUM(CASE WHEN pizza_name = 'Vegetarian' THEN 1 ELSE 0 END) AS Vegetarian, SUM(CASE WHEN pizza_name = 'Meatlovers' THEN 1 ELSE 0 END) AS Meatlovers
 FROM customer_orders
@@ -182,9 +184,9 @@ JOIN pizza_names
 ON customer_orders.pizza_id = pizza_names.pizza_id
 GROUP BY customer_id
 ORDER BY customer_id;
-
--- 6.What was the maximum number of pizzas delivered in a single order?
-
+```
+6. What was the maximum number of pizzas delivered in a single order?
+```
 SELECT MAX(counts)
 FROM (
   SELECT runner_orders.order_id, COUNT(pizza_id) AS counts
@@ -194,9 +196,9 @@ FROM (
   WHERE cancellation = ''
   GROUP BY runner_orders.order_id
 ) AS order_pizza_counts;
-
--- 7.For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
-
+```
+7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
+```
 SELECT customer_id, 
   SUM(CASE 
       WHEN exclusions <> '' OR extras <> '' 
@@ -214,24 +216,24 @@ ON runner_orders.order_id = customer_orders.order_id
 WHERE cancellation = ''
 GROUP BY customer_id
 ORDER BY customer_id;
-
--- 8.How many pizzas were delivered that had both exclusions and extras?
-
+```
+8. How many pizzas were delivered that had both exclusions and extras?
+```
 SELECT COUNT(*)
 FROM customer_orders
 JOIN runner_orders
 ON customer_orders.order_id = runner_orders.order_id
 WHERE cancellation = '' AND exclusions <> '' AND extras <> '';
-
--- 9.What was the total volume of pizzas ordered for each hour of the day?
-
+```
+9. What was the total volume of pizzas ordered for each hour of the day?
+```
 SELECT date_part('hour', order_time), COUNT(order_id)
 FROM customer_orders
 GROUP BY date_part('hour', order_time)
 ORDER BY date_part('hour', order_time);
-
--- 10.What was the volume of orders for each day of the week?
-
+```
+10. What was the volume of orders for each day of the week?
+```
 SELECT 'number of orders',
 COUNT(date_part('dow', order_time) = 1 or null) as monday,
 COUNT(date_part('dow', order_time) = 2 or null) as tuesday,
@@ -241,26 +243,26 @@ COUNT(date_part('dow', order_time) = 5 or null) as friday,
 COUNT(date_part('dow', order_time) = 6 or null) as saturday,
 COUNT(date_part('dow', order_time) = 7 or null) as sunday
 FROM customer_orders;
+```
+B. Runner and Customer Experience
 
--- B. Runner and Customer Experience
-
--- 1.How many runners signed up for each 1 week period? (i.e. week starts 2021-01-01)
-
+1. How many runners signed up for each 1 week period? (i.e. week starts 2021-01-01)
+```
 SELECT date_part('week', registration_date), COUNT(runner_id)
 FROM runners
 GROUP BY date_part('week', registration_date)
 ORDER BY date_part('week', registration_date);
-
--- 2.What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
-
+```
+2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
+```
 SELECT runner_id, AVG(EXTRACT(EPOCH FROM (pickup_time - order_time)) / 60) AS average_pickup_time
 FROM runner_orders
 JOIN customer_orders
 ON runner_orders.order_id = customer_orders.order_id
 GROUP BY runner_id;
-
--- 3.Is there any relationship between the number of pizzas and how long the order takes to prepare?
-
+```
+3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
+```
 WITH pizza_counts AS (
   SELECT runner_orders.order_id, COUNT(pizza_id) AS pizza_count
   FROM runner_orders
@@ -280,9 +282,9 @@ prepare_time AS (
 )  
 SELECT corr(preparation, pizza_count) AS correlation, corr(preparation, pizza_count) / SQRT(((1 - POW(corr(preparation, pizza_count), 2)) / (COUNT(*) - 2))) AS t_value, (corr(preparation, pizza_count) / SQRT(((1 - POW(corr(preparation, pizza_count), 2)) / (COUNT(*) - 2))) > 2.306) AS correlation_significance
 FROM prepare_time JOIN pizza_counts ON prepare_time.order_id = pizza_counts.order_id;
-
--- 4.What was the average distance travelled for each customer?
-
+```
+4. What was the average distance travelled for each customer?
+```
 WITH customer_distances AS (
   SELECT customer_id, customer_orders.order_id, AVG(runner_orders.distance) AS distance
   FROM customer_orders
@@ -294,30 +296,30 @@ WITH customer_distances AS (
 SELECT customer_id, AVG(distance)
 FROM customer_distances
 GROUP BY customer_id;
-
--- 5.What was the difference between the longest and shortest delivery times for all orders?
-
+```
+5. What was the difference between the longest and shortest delivery times for all orders?
+```
 SELECT MAX(duration) - MIN(duration)
 FROM runner_orders;
-
--- 6.What was the average speed for each runner for each delivery and do you notice any trend for these values?
-
+```
+6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
+```
 SELECT runner_id, order_id, distance/(duration/60)
 FROM runner_orders
 WHERE cancellation = ''
 ORDER BY runner_id, order_id;
-
--- 7.What is the successful delivery percentage for each runner?
-
+```
+7. What is the successful delivery percentage for each runner?
+```
 SELECT runner_id, CONCAT(CAST(CAST(SUM(CASE WHEN cancellation = '' THEN 1 ELSE 0 END) AS DECIMAL)/CAST(COUNT(cancellation) AS DECIMAL) * 100 AS DECIMAL(10, 2)), '%')
 FROM runner_orders
 GROUP BY runner_id
 ORDER BY runner_id;
+```
+C. Ingredient Optimisation
 
--- C. Ingredient Optimisation
-
--- 1. What are the standard ingredients for each pizza?
-
+1. What are the standard ingredients for each pizza?
+```
 WITH pizza_recipes_fixed AS (
   SELECT pizza_id, CAST(UNNEST(STRING_TO_ARRAY(toppings, ', ')) AS INTEGER) AS topping
   FROM pizza_recipes
@@ -329,7 +331,9 @@ ON pizza_recipes_fixed.topping = pizza_toppings.topping_id
 JOIN pizza_names
 ON pizza_names.pizza_id = pizza_recipes_fixed.pizza_id
 GROUP BY pizza_name;
--- 2.What was the most commonly added extra?
+```
+2. What was the most commonly added extra?
+```
 WITH extras_fixed AS (
   SELECT UNNEST(STRING_TO_ARRAY(extras, ', ')) AS topping
   FROM customer_orders
@@ -341,9 +345,9 @@ ON extras_fixed.topping = CAST(pizza_toppings.topping_id AS TEXT)
 GROUP BY topping_name
 ORDER BY COUNT(topping_name) DESC
 LIMIT 1;
-
--- 3.What was the most common exclusion?
-
+```
+3. What was the most common exclusion?
+```
 WITH extras_fixed AS (
   SELECT UNNEST(STRING_TO_ARRAY(extras, ', ')) AS topping
   FROM customer_orders
@@ -354,13 +358,13 @@ JOIN pizza_toppings
 ON extras_fixed.topping = CAST(pizza_toppings.topping_id AS TEXT)
 GROUP BY topping_name
 ORDER BY COUNT(topping_name) DESC;
-
--- 4.Generate an order item for each record in the customers_orders table in the format of one of the following:
--- Meat Lovers
--- Meat Lovers - Exclude Beef
--- Meat Lovers - Extra Bacon
--- Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
-
+```
+4. Generate an order item for each record in the customers_orders table in the format of one of the following:
+Meat Lovers
+Meat Lovers - Exclude Beef
+Meat Lovers - Extra Bacon
+Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
+```
 WITH extras_table AS (
   SELECT extras, CONCAT(' - Extra ', STRING_AGG(DISTINCT topping_name, ', ')) AS toppings
   FROM (
@@ -389,10 +393,10 @@ LEFT JOIN extras_table
 ON extras_table.extras = customer_orders.extras
 JOIN pizza_names
 ON pizza_names.pizza_id = customer_orders.pizza_id;
-
--- 5.Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
--- For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
-
+```
+5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
+For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
+```
 WITH pizza_recipes_fixed AS (
   SELECT pizza_id, temp.topping_id, topping_name
   FROM (
@@ -428,9 +432,9 @@ SELECT CONCAT(pizza_name, ': ', ARRAY_TO_STRING(ARRAY
 FROM customer_orders
 JOIN pizza_names
 ON customer_orders.pizza_id = pizza_names.pizza_id;
-
--- 6.What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
-
+```
+6. What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
+```
 WITH pizza_recipes_fixed AS (
   SELECT pizza_id, temp.topping_id, topping_name
   FROM (
@@ -456,3 +460,4 @@ WHERE position(CAST(pizza_toppings.topping_id AS TEXT) in extras) <> 0
 ) AS res
 GROUP BY topping_name
 ORDER BY COUNT(topping_name) DESC;
+```
