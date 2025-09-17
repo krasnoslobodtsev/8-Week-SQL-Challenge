@@ -1,7 +1,8 @@
 [Case description and schema](https://8weeksqlchallenge.com/case-study-2/)
 
 Schema and data cleaning:
-```CREATE SCHEMA pizza_runner;
+```
+CREATE SCHEMA pizza_runner;
 SET search_path = pizza_runner;
 
 DROP TABLE IF EXISTS runners;
