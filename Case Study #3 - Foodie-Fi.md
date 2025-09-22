@@ -166,5 +166,6 @@ SELECT customer_id,
              ELSE price
              END as amount,
         RANK() OVER (PARTITION BY customer_id ORDER BY payment_date) AS payment_order
-FROM payments_undiscounted;
+FROM payments_undiscounted
+WHERE payment_date < '2021-01-01';
 ```
